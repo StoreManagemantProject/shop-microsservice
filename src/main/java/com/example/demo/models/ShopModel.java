@@ -25,6 +25,7 @@ public class ShopModel {
     private UUID id;
 
     private String name;
+    private String cnpj;
     private String address;
     private String phone;
     private String email;
