@@ -1,7 +1,7 @@
 package com.example.demo.models;
 
 import java.util.Date;
-import java.util.List;
+import java.util.HashSet;
 import java.util.UUID;
 
 import jakarta.persistence.Entity;
@@ -26,11 +26,26 @@ public class StorageModel {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long totalProductsQuantity;    
+    private Long totalProductsQuantity;
+    private Double totalProductsValue;    
     private boolean isActive;
     private String description;
     private Date createdAt;
     private Date updatedAt;
     private UUID responsibleId;
-    private List<ProductModel> productList = null;
+    private HashSet<ProductModel> productList = new HashSet<>() ;
+
+    public void addProduct(ProductModel product) {
+        if (product != null) {
+            productList.add(product);
+            totalProductsQuantity += product.getQuantity();
+            totalProductsValue += product.getPrice() * product.getQuantity();
+        }
+    }
+    public void removeProduct(ProductModel product) {
+        if (product != null && productList.remove(product)) {
+            totalProductsQuantity -= product.getQuantity();
+            totalProductsValue -= product.getPrice() * product.getQuantity();
+        }
+    }
 }
