@@ -1,6 +1,7 @@
 package com.example.demo.controller;
 
 import java.util.Map;
+import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -40,7 +41,7 @@ public class StorageController {
     }
     @PostMapping("/addProduct/{storageId}/{productId}")
     public ResponseEntity<?> addProductToStorage(@RequestParam(name = "storageId") Long storageId,
-                                                 @RequestParam(name = "productId") Long productId) throws NotFoundException {
+                                                 @RequestParam(name = "productId") UUID productId) throws NotFoundException {
 
         Boolean isAdded = storageService.addProductToStorage(storageId, productId);
         if (isAdded) {
@@ -52,7 +53,7 @@ public class StorageController {
 
     @PostMapping("/removeProduct/{storageId}/{productId}")
     public ResponseEntity<?> removeProductFromStorage(@RequestParam(name = "storageId") Long storageId,
-                                                      @RequestParam(name = "productId") Long productId) throws NotFoundException {
+                                                      @RequestParam(name = "productId") UUID productId) throws NotFoundException {
 
         Boolean isRemoved = storageService.removeProductFromStorage(storageId, productId);
         if (isRemoved) {

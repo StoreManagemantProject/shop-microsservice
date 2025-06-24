@@ -1,6 +1,8 @@
 package com.example.demo.service;
 
 
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 
 import com.example.demo.exception.NotFoundException;
@@ -44,14 +46,14 @@ public class StorageService {
         storageModel.setUpdatedAt(new java.util.Date());
         return storageRepository.save(storageModel).getId();
     }
-    public boolean addProductToStorage(Long storageId, Long productId) throws NotFoundException {
+    public boolean addProductToStorage(Long storageId, UUID productId) throws NotFoundException {
         StorageModel storage = storageRepository.findById(storageId).orElseThrow(() -> new NotFoundException("Storage not found"));
         ProductModel product = productRepository.findById(productId).orElseThrow(() -> new NotFoundException("Product not found"));
         storage.addProduct(product);
         storageRepository.save(storage);
         return true;   
     }
-    public boolean removeProductFromStorage(Long storageId, Long productId) throws NotFoundException {
+    public boolean removeProductFromStorage(Long storageId, UUID productId) throws NotFoundException {
         StorageModel storage = storageRepository.findById(storageId).orElseThrow(() -> new NotFoundException("Storage not found"));
         ProductModel product = productRepository.findById(productId).orElseThrow(() -> new NotFoundException("Product not found"));
         storage.removeProduct(product);
