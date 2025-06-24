@@ -15,11 +15,11 @@ import com.example.demo.service.StorageService;
 
 @RestController
 @RequestMapping("/api/storage")
-public class StorageRepository {
+public class StorageController {
 
     private final StorageService storageService;
     
-    public StorageRepository(StorageService storageService) {
+    public StorageController(StorageService storageService) {
         this.storageService = storageService;
     }
 

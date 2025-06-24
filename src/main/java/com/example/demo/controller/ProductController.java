@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -23,9 +24,9 @@ public class ProductController {
         this.productService = productService;
     }
 
-    @PostMapping("/create")
-    public ResponseEntity<?> createProduct(@RequestBody ProductModel product) {
-        UUID productId = productService.createProduct(product);
+    @PostMapping("/create/{storageId}")
+    public ResponseEntity<?> createProduct(@RequestBody ProductModel product, @PathVariable Long storageId) throws NotFoundException {
+        UUID productId = productService.createProduct(product, storageId);
         return ResponseEntity.ok().body(Map.of("productId", productId.toString(), 
                                                 "message", "Product created successfully"));
     }
@@ -56,6 +57,13 @@ public class ProductController {
             throws NotFoundException {
         productService.activateProduct(productId);
         return ResponseEntity.ok().body(Map.of("message", "Product activated successfully"));
+    }
+
+    @DeleteMapping("/delete/{storageId}/{productId}")
+    public ResponseEntity<?> deleteProduct(@PathVariable UUID productId, @PathVariable Long storageId)
+            throws NotFoundException {
+        productService.deleteProduct(productId, storageId);
+        return ResponseEntity.noContent().build();
     }
     
 }

@@ -26,13 +26,13 @@ public class ShopController {
         this.shopService = shopService;
     }
 
-    @PostMapping("/private/create")
+    @PostMapping("/create")
     public ResponseEntity<?> createShop(@RequestBody ShopModel shopModel) throws BadRequestException{
         UUID id = shopService.createShop(shopModel);
         return ResponseEntity.status(201).body(Map.of("message", "Shop created successfully", "id", id.toString()));
     }
 
-    @GetMapping("/public/list-all")
+    @GetMapping("/list-all")
     public ResponseEntity<?> listShops() {
         try {
             return ResponseEntity.ok(shopService.getAllShops());
@@ -41,7 +41,7 @@ public class ShopController {
         }
     }   
     
-    @PutMapping("/private/deactivate/{shopId}")
+    @PutMapping("/deactivate/{shopId}")
     public ResponseEntity<?> deactivateShop(@RequestHeader ("requisitionOwner") UUID requisitionOwner, @RequestHeader ("shopId") UUID shopId) throws BadRequestException, IllegalAccessException {
         if (requisitionOwner == null || shopId == null) {
             throw new BadRequestException("Requisition owner or shop ID cannot be null");
@@ -54,7 +54,7 @@ public class ShopController {
         }
                 
     }
-    @PutMapping("/private/activate/{shopId}")
+    @PutMapping("/activate/{shopId}")
     public ResponseEntity<?> activateShop(@RequestHeader ("requisitionOwner") UUID requisitionOwner, @RequestHeader ("shopId") UUID shopId) throws BadRequestException, IllegalAccessException {
         if (requisitionOwner == null || shopId == null) {
             throw new BadRequestException("Requisition owner or shop ID cannot be null");
@@ -67,7 +67,7 @@ public class ShopController {
         }
     }
 
-    @GetMapping("/public/list/{shopId}")
+    @GetMapping("/list/{shopId}")
     public ResponseEntity<?> getShopById(@RequestHeader ("shopId") UUID shopId) {
         try {
             ShopModel shop = shopService.getShopById(shopId);

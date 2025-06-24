@@ -6,24 +6,33 @@ import org.springframework.stereotype.Service;
 
 import com.example.demo.exception.NotFoundException;
 import com.example.demo.models.ProductModel;
+import com.example.demo.models.StorageModel;
 import com.example.demo.repository.ProductRepository;
+import com.example.demo.repository.StorageRepository;
 
 @Service
 public class ProductService {
     
     private final ProductRepository productRepository;
-    
-    public ProductService(ProductRepository productRepository) {
+    private final StorageRepository storageRepository;
+
+    public ProductService(ProductRepository productRepository, StorageRepository storageRepository) {
         this.productRepository = productRepository;
+        this.storageRepository = storageRepository;
     }
 
-    public UUID createProduct(ProductModel product) {
+    public UUID createProduct(ProductModel product, Long storageId)  throws NotFoundException {
         validateProductData(product);
-        product.setProductId(UUID.randomUUID());
+        StorageModel storage = storageRepository.findById(storageId)
+                .orElseThrow(() -> new NotFoundException("Storage not found"));
+        
         product.setCreatedAt(String.valueOf(System.currentTimeMillis()));
         product.setUpdatedAt(String.valueOf(System.currentTimeMillis()));
         product.setIsActive(true);
+        
         ProductModel savedProduct = productRepository.save(product);
+        storage.addProduct(savedProduct);
+        storageRepository.save(storage);
         return savedProduct.getProductId();
     }
     
@@ -68,5 +77,15 @@ public class ProductService {
         if (product.getPrice() == null || product.getPrice() < 0) {
             throw new IllegalArgumentException("Invalid price");
         }
+    }
+    public boolean deleteProduct(UUID productId, Long storageId) throws NotFoundException {
+        ProductModel product = productRepository.findByProductId(productId)
+                .orElseThrow(() -> new NotFoundException("Product not found"));
+        productRepository.delete(product);
+        StorageModel storage =storageRepository.findById(storageId)
+                .orElseThrow(() -> new NotFoundException("Storage not found"));
+        storage.removeProduct(product);
+        storageRepository.save(storage);
+        return true;
     }
 }
