@@ -25,7 +25,7 @@ public class ProductModel {
     private UUID id;
     
     private UUID productId;
-    private Integer quantity;
+    private Long quantity;
     private Double price;
     private Boolean isActive;
     private String createdAt;

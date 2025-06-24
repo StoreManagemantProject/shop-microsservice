@@ -26,14 +26,14 @@ public class StorageModel {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long totalProductsQuantity;
-    private Double totalProductsValue;    
+    private Long totalProductsQuantity = 0L;
+    private Double totalProductsValue = 0.0; 
     private boolean isActive;
     private String description;
     private Date createdAt;
     private Date updatedAt;
     private UUID responsibleId;
-    private HashSet<ProductModel> productList = new HashSet<>() ;
+    private HashSet<ProductModel> productList = new HashSet<>();
 
     public void addProduct(ProductModel product) {
         if (product != null) {
