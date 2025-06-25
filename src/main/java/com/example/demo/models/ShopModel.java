@@ -29,7 +29,6 @@ public class ShopModel {
     private String address;
     private String phone;
     private String email;
-    private String website;
     private String description;
     private boolean isActive;
     private UUID responsibleId;

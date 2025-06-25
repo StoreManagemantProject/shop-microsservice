@@ -111,9 +111,7 @@ public class ShopService {
             !shopModel.getEmail().matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")) {
             throw new BadRequestException("Email cannot be empty or invalid");
         }
-        if (shopModel.getWebsite() == null || shopModel.getWebsite().isEmpty()) {
-            throw new BadRequestException("Website cannot be empty");
-        }        
+        
         if (shopModel.getDescription() == null || shopModel.getDescription().isEmpty()) {
             throw new BadRequestException("Description cannot be empty");
         }
