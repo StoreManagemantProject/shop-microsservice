@@ -26,6 +26,8 @@ public class StorageModel {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private String name;
+    private String location;
     private Long totalProductsQuantity = 0L;
     private Double totalProductsValue = 0.0; 
     private boolean isActive;

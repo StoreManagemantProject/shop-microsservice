@@ -3,6 +3,8 @@ package com.example.demo.controller;
 import com.example.demo.exception.NotFoundException;
 import com.example.demo.models.StorageModel;
 import com.example.demo.service.StorageService;
+import com.example.demo.util.CustomLogger;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,7 +26,10 @@ class StorageControllerTest {
 
     @Mock
     private StorageService storageService;
-
+    
+    @Mock
+    private CustomLogger logger; 
+    
     @InjectMocks
     private StorageController storageController;
 

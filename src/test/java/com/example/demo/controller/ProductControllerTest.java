@@ -3,6 +3,8 @@ package com.example.demo.controller;
 import com.example.demo.exception.NotFoundException;
 import com.example.demo.models.ProductModel;
 import com.example.demo.service.ProductService;
+import com.example.demo.util.CustomLogger;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,6 +27,9 @@ class ProductControllerTest {
 
     @Mock
     private ProductService productService;
+
+    @Mock
+    private CustomLogger logger; 
 
     @InjectMocks
     private ProductController productController;
