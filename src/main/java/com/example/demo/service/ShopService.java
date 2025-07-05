@@ -5,6 +5,7 @@ import java.util.UUID;
 import org.apache.coyote.BadRequestException;
 import org.springframework.stereotype.Service;
 
+import com.example.demo.enums.LogPermissionEnum;
 import com.example.demo.exception.NotFoundException;
 import com.example.demo.models.ShopModel;
 import com.example.demo.repository.ShopRepository;
@@ -12,11 +13,12 @@ import com.example.demo.repository.ShopRepository;
 @Service
 public class ShopService {
     
-    private ShopRepository shopRepository;
+    private final ShopRepository shopRepository;
+    private final LogService logService;
 
-
-    public ShopService(ShopRepository shopRepository) {
+    public ShopService(ShopRepository shopRepository, LogService logService) {
         this.shopRepository = shopRepository;
+        this.logService = logService;
     }
 
     public Iterable<ShopModel> getAllShops() {
@@ -28,15 +30,23 @@ public class ShopService {
             .orElseThrow(() -> new NotFoundException("Shop not found"));
     }
 
-    public UUID createShop(ShopModel shopModel) throws BadRequestException {
+    public UUID createShop(ShopModel shopModel, UUID requestOwner) throws BadRequestException {
         validateShopData(shopModel);
         shopModel.setCreatedAt(new java.util.Date().toString());
         shopModel.setUpdatedAt(new java.util.Date().toString());
         shopModel.setStatus(true);
+        logService.saveStoreLog(
+            "Shop created: " + shopModel.getId(),
+            LogPermissionEnum.ADMIN,
+            shopModel.getId(),
+            "Created shop with ID: " + shopModel.getId(),
+            requestOwner,
+            "CREATE"
+        );
         return shopRepository.save(shopModel).getId();
     }
 
-    public Boolean deactivateShop(UUID shopId, UUID requisitionOwner) throws BadRequestException, IllegalAccessException{
+    public Boolean deactivateShop(UUID shopId, UUID requestOwner) throws BadRequestException, IllegalAccessException{
         ShopModel shopModel = shopRepository.findById(shopId)
             .orElseThrow(() -> new BadRequestException("Shop not found"));
         
@@ -44,16 +54,24 @@ public class ShopService {
             throw new BadRequestException("Shop is already deactivated");
         }
         
-        if (shopModel.getResponsibleId() == null || !shopModel.getResponsibleId().equals(requisitionOwner)) {
+        if (shopModel.getResponsibleId() == null || !shopModel.getResponsibleId().equals(requestOwner)) {
             throw new IllegalAccessException("You do not have permission to deactivate this shop");
         }
         
         shopModel.setStatus(false);
         shopRepository.save(shopModel);
+        logService.saveStoreLog(
+            "Shop deactivated: " + shopModel.getId(),
+            LogPermissionEnum.ADMIN,
+            shopModel.getId(),
+            "Deactivated shop with ID: " + shopModel.getId(),
+            requestOwner,
+            "DEACTIVATE"
+        );
         return true;
     }
 
-    public boolean activateShop(UUID shopId, UUID requisitionOwner) throws BadRequestException, IllegalAccessException {
+    public boolean activateShop(UUID shopId, UUID requestOwner) throws BadRequestException, IllegalAccessException {
         ShopModel shopModel = shopRepository.findById(shopId)
             .orElseThrow(() -> new BadRequestException("Shop not found"));
         
@@ -61,16 +79,24 @@ public class ShopService {
             throw new BadRequestException("Shop is already active");
         }
         
-        if (shopModel.getResponsibleId() == null || !shopModel.getResponsibleId().equals(requisitionOwner)) {
+        if (shopModel.getResponsibleId() == null || !shopModel.getResponsibleId().equals(requestOwner)) {
             throw new IllegalAccessException("You do not have permission to activate this shop");
         }
         
         shopModel.setStatus(true);
         shopRepository.save(shopModel);
+        logService.saveStoreLog(
+            "Shop activated: " + shopModel.getId(),
+            LogPermissionEnum.ADMIN,
+            shopModel.getId(),
+            "Activated shop with ID: " + shopModel.getId(),
+            requestOwner,
+            "ACTIVATE"
+        );
         return true;
     }
 
-    public Boolean updateShop(UUID shopId, ShopModel updatedShopModel, UUID requisitionOwner) throws BadRequestException, IllegalAccessException {
+    public Boolean updateShop(UUID shopId, ShopModel updatedShopModel, UUID requestOwner) throws BadRequestException, IllegalAccessException {
         ShopModel existingShop = shopRepository.findById(shopId)
             .orElseThrow(() -> new BadRequestException("Shop not found"));
         
@@ -78,7 +104,7 @@ public class ShopService {
             throw new BadRequestException("Cannot update a deactivated shop");
         }
         
-        if (existingShop.getResponsibleId() == null || !existingShop.getResponsibleId().equals(requisitionOwner)) {
+        if (existingShop.getResponsibleId() == null || !existingShop.getResponsibleId().equals(requestOwner)) {
             throw new IllegalAccessException("You do not have permission to update this shop");
         }
         
@@ -88,7 +114,17 @@ public class ShopService {
         updatedShopModel.setUpdatedAt(new java.util.Date().toString());
         updatedShopModel.setStatus(existingShop.getStatus());
         
+        logService.saveStoreLog(
+            "Shop updated: " + updatedShopModel.getId(),
+            LogPermissionEnum.ADMIN,
+            updatedShopModel.getId(),
+            "Updated shop with ID: " + updatedShopModel.getId(),
+            requestOwner,
+            "UPDATE"
+        );
+
         shopRepository.save(updatedShopModel);
+
         return true;
     }
 

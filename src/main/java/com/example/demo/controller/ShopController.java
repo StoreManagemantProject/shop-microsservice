@@ -14,8 +14,10 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.demo.config.JwtTokenProvider;
 import com.example.demo.models.ShopModel;
 import com.example.demo.service.ShopService;
 import com.example.demo.util.CustomLogger;
@@ -25,18 +27,21 @@ import com.example.demo.util.CustomLogger;
 public class ShopController {
     private final ShopService shopService;
     private final CustomLogger logger;
+    private final JwtTokenProvider jwtTokenProvider;
     
-    public ShopController(ShopService shopService, CustomLogger logger) {
+    public ShopController(ShopService shopService, CustomLogger logger, JwtTokenProvider jwtTokenProvider) {
         this.shopService = shopService;
         this.logger = logger;
-        logger.logInfo("ShopController initialized");
+        this.jwtTokenProvider = jwtTokenProvider;
     }
 
     @PostMapping("/create")
-    public ResponseEntity<?> createShop(@RequestBody ShopModel shopModel) throws BadRequestException {
+    public ResponseEntity<?> createShop(@RequestBody ShopModel shopModel, 
+                                        @RequestHeader("Authorization") String token) throws BadRequestException {
         logger.logInfo("Attempting to create new shop: " + shopModel.getName());
         try {
-            UUID id = shopService.createShop(shopModel);
+            UUID requestOwner = jwtTokenProvider.retrieveIdFromToken(token);
+            UUID id = shopService.createShop(shopModel, requestOwner);
             logger.logInfo("Shop created successfully with ID: " + id);
             return ResponseEntity.status(201).body(Map.of(
                 "message", "Shop created successfully", 
@@ -67,21 +72,23 @@ public class ShopController {
     
     @PutMapping("/deactivate/{shopId}")
     public ResponseEntity<?> deactivateShop(
-            @RequestHeader("requisitionOwner") UUID requisitionOwner, 
-            @RequestHeader("shopId") UUID shopId) 
+            @RequestParam(name = "shopId") UUID shopId,
+            @RequestHeader("Authorization") String token)
             throws BadRequestException, IllegalAccessException {
-        
+    
+        UUID requestOwner = jwtTokenProvider.retrieveIdFromToken(token);
+
         logger.logInfo(String.format(
             "Attempting to deactivate shop (ID: %s) by requisition owner: %s", 
-            shopId, requisitionOwner));
+            shopId, requestOwner));
         
-        if (requisitionOwner == null || shopId == null) {
+        if (requestOwner == null || shopId == null) {
             String errorMsg = "Requisition owner or shop ID cannot be null";
             logger.logError(errorMsg, new BadRequestException(errorMsg));
             throw new BadRequestException(errorMsg);
         }
         
-        boolean result = shopService.deactivateShop(shopId, requisitionOwner);
+        boolean result = shopService.deactivateShop(shopId, requestOwner);
         if(result) {
             logger.logInfo("Shop deactivated successfully: " + shopId);
             return ResponseEntity.accepted().body(Map.of(
@@ -95,21 +102,17 @@ public class ShopController {
     
     @PutMapping("/activate/{shopId}")
     public ResponseEntity<?> activateShop(
-            @RequestHeader("requisitionOwner") UUID requisitionOwner, 
-            @RequestHeader("shopId") UUID shopId) 
+            @RequestHeader("Authorization") String token, 
+            @RequestParam(name = "shopId") UUID shopId) 
             throws BadRequestException, IllegalAccessException {
         
+        UUID requestOwner = jwtTokenProvider.retrieveIdFromToken(token);
+
         logger.logInfo(String.format(
             "Attempting to activate shop (ID: %s) by requisition owner: %s", 
-            shopId, requisitionOwner));
+            shopId, requestOwner));
         
-        if (requisitionOwner == null || shopId == null) {
-            String errorMsg = "Requisition owner or shop ID cannot be null";
-            logger.logError(errorMsg, new BadRequestException(errorMsg));
-            throw new BadRequestException(errorMsg);
-        }
-        
-        boolean result = shopService.activateShop(shopId, requisitionOwner);
+        boolean result = shopService.activateShop(shopId, requestOwner);
         if(result) {
             logger.logInfo("Shop activated successfully: " + shopId);
             return ResponseEntity.accepted().body(Map.of(
