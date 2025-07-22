@@ -44,5 +44,8 @@ public class ShopModel {
     private Date closingHours;
 
     @ManyToMany
+    @jakarta.persistence.JoinTable(name = "shop_storages",
+               joinColumns = @jakarta.persistence.JoinColumn(name = "shop_id"),
+               inverseJoinColumns = @jakarta.persistence.JoinColumn(name = "storage_id"))
     private HashSet<StorageModel> storages = new HashSet<>();
 }
