@@ -26,9 +26,13 @@ class ShopServiceTest {
     @InjectMocks
     private ShopService shopService;
 
+    @Mock
+    private LogService logService;
+    
     private ShopModel testShop;
     private final UUID testShopId = UUID.randomUUID();
     private final UUID testResponsibleId = UUID.randomUUID();
+    private final UUID testRequestOwner = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
@@ -95,7 +99,7 @@ class ShopServiceTest {
         when(shopRepository.save(any(ShopModel.class))).thenReturn(testShop);
 
         // Act
-        UUID result = shopService.createShop(testShop);
+        UUID result = shopService.createShop(testShop, testRequestOwner);
 
         // Assert
         assertNotNull(result);
@@ -113,7 +117,7 @@ class ShopServiceTest {
 
         // Act & Assert
         assertThrows(BadRequestException.class, () -> {
-            shopService.createShop(testShop);
+            shopService.createShop(testShop, testRequestOwner);
         });
     }
 
@@ -229,7 +233,7 @@ class ShopServiceTest {
         when(shopRepository.save(any(ShopModel.class))).thenReturn(testShop);
         
         // Act
-        UUID result = shopService.createShop(testShop);
+        UUID result = shopService.createShop(testShop, testRequestOwner);
         
         // Assert
         assertNotNull(result);
@@ -240,13 +244,13 @@ class ShopServiceTest {
     @Test
     void validateShopData_MissingName() {
         testShop.setName(null);
-        assertThrows(BadRequestException.class, () -> shopService.createShop(testShop));
+        assertThrows(BadRequestException.class, () -> shopService.createShop(testShop, testRequestOwner));
     }
 
     // Add similar tests for all other validation rules...
     @Test
     void validateShopData_InvalidEmail() {
         testShop.setEmail("invalid-email");
-        assertThrows(BadRequestException.class, () -> shopService.createShop(testShop));
+        assertThrows(BadRequestException.class, () -> shopService.createShop(testShop, testRequestOwner));
     }
 }

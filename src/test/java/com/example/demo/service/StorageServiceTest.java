@@ -28,6 +28,9 @@ class StorageServiceTest {
     @Mock
     private ProductRepository productRepository;
 
+    @Mock
+    private LogService logService;
+
     @InjectMocks
     private StorageService storageService;
 
@@ -36,6 +39,8 @@ class StorageServiceTest {
     private final Long testStorageId = 1L;
     private final UUID testProductId = UUID.randomUUID();
     private final UUID testResponsibleId = UUID.randomUUID();
+    private final UUID testRequestOwner = UUID.randomUUID();
+    private final UUID testStoreId = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
@@ -66,7 +71,7 @@ class StorageServiceTest {
         when(storageRepository.save(any(StorageModel.class))).thenReturn(testStorage);
 
         // Act
-        boolean result = storageService.updateStorage(updatedStorage);
+        boolean result = storageService.updateStorage(testRequestOwner, updatedStorage, testResponsibleId);
 
         // Assert
         assertTrue(result);
@@ -84,7 +89,7 @@ class StorageServiceTest {
 
         // Act & Assert
         assertThrows(NotFoundException.class, () -> {
-            storageService.updateStorage(testStorage);
+            storageService.updateStorage(testRequestOwner, testStorage, testStoreId);
         });
     }
 
@@ -95,7 +100,7 @@ class StorageServiceTest {
 
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> {
-            storageService.updateStorage(testStorage);
+            storageService.updateStorage(testRequestOwner, testStorage, testStoreId);
         });
     }
 
@@ -105,7 +110,7 @@ class StorageServiceTest {
         when(storageRepository.save(any(StorageModel.class))).thenReturn(testStorage);
 
         // Act
-        Long result = storageService.createNewStorage(testStorage);
+        Long result = storageService.createNewStorage(testRequestOwner, testStorage, testStoreId);
 
         // Assert
         assertEquals(testStorageId, result);
@@ -125,7 +130,7 @@ class StorageServiceTest {
         when(storageRepository.save(any(StorageModel.class))).thenReturn(testStorage);
 
         // Act
-        boolean result = storageService.addProductToStorage(testStorageId, testProductId);
+        boolean result = storageService.addProductToStorage(testRequestOwner, testStorageId,  testProductId, testStoreId);
 
         // Assert
         assertTrue(result);
@@ -140,7 +145,7 @@ class StorageServiceTest {
 
         // Act & Assert
         assertThrows(NotFoundException.class, () -> {
-            storageService.addProductToStorage(testStorageId, testProductId);
+            storageService.addProductToStorage(testRequestOwner, testStorageId,  testProductId, testStoreId);
         });
     }
 
@@ -152,7 +157,7 @@ class StorageServiceTest {
 
         // Act & Assert
         assertThrows(NotFoundException.class, () -> {
-            storageService.addProductToStorage(testStorageId, testProductId);
+            storageService.addProductToStorage(testRequestOwner, testStorageId,  testProductId, testStoreId);
         });
     }
 
@@ -164,7 +169,7 @@ class StorageServiceTest {
         when(storageRepository.save(any(StorageModel.class))).thenReturn(testStorage);
 
         // Act
-        boolean result = storageService.removeProductFromStorage(testStorageId, testProductId);
+        boolean result = storageService.removeProductFromStorage(testRequestOwner, testStorageId,  testProductId, testStoreId);
 
         // Assert
         assertTrue(result);
@@ -180,7 +185,7 @@ class StorageServiceTest {
         when(storageRepository.save(any(StorageModel.class))).thenReturn(testStorage);
 
         // Act
-        boolean result = storageService.deactivateStorage(testStorageId);
+        boolean result = storageService.deactivateStorage(testRequestOwner, testStorageId, testStoreId);
 
         // Assert
         assertTrue(result);
@@ -196,7 +201,7 @@ class StorageServiceTest {
         when(storageRepository.save(any(StorageModel.class))).thenReturn(testStorage);
 
         // Act
-        boolean result = storageService.activateStorage(testStorageId);
+        boolean result = storageService.activateStorage(testRequestOwner, testStorageId, testStoreId);
 
         // Assert
         assertTrue(result);

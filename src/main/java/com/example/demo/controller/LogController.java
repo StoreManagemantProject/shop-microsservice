@@ -23,7 +23,7 @@ public class LogController {
         this.logService = logService;
     }
 
-    @GetMapping("/get-all/${storeId}")
+    @GetMapping("/get-all/{storeId}")
     public ResponseEntity<?> getLogs(@PathVariable("storeId") UUID storeId, @RequestParam LogPermissionEnum logPermission) {
         try {
             return ResponseEntity.ok(logService.getAllLogs(storeId, logPermission));

@@ -30,7 +30,7 @@ public class LogService {
         try {
             LogModel logModel = new LogModel();
             logModel.setMessage(message);
-            logModel.setPermission(permission);
+            logModel.setLogPermission(permission);
             logModel.setStoreId(storeId);
             logModel.setDetails(details);
             logModel.setLogOwnerId(logOwnerId);
@@ -46,7 +46,7 @@ public class LogService {
         try {
             ProductLogModel productLogModel = new ProductLogModel();
             productLogModel.setMessage(message);
-            productLogModel.setPermission(permission);
+            productLogModel.setLogPermission(permission);
             productLogModel.setProductId(productId);
             productLogModel.setDetails(details);
             productLogModel.setLogOwnerId(logOwnerId);

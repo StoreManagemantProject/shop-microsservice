@@ -26,7 +26,7 @@ public class StorageService {
     }
 
 
-    public boolean updateStorage(UUID requestOwner, StorageModel storageModel, UUID storageId) throws NotFoundException{
+    public boolean updateStorage(UUID requestOwner, StorageModel storageModel, UUID storeId) throws NotFoundException{
         if(storageModel.getId() == null) {
             throw new IllegalArgumentException("Storage ID cannot be null");
         }
@@ -42,7 +42,7 @@ public class StorageService {
         logService.saveStoreLog(
             "Storage updated: " + existingStorage.getId(),
             LogPermissionEnum.MANAGER, 
-            storageId,
+            storeId,
             "Updated storage with ID: " + existingStorage.getId(),
             requestOwner,
             "UPDATE"

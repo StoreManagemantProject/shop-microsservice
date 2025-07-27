@@ -1,10 +1,10 @@
 package com.example.demo.controller;
 
+import com.example.demo.config.JwtTokenProvider;
 import com.example.demo.exception.NotFoundException;
 import com.example.demo.models.ProductModel;
 import com.example.demo.service.ProductService;
 import com.example.demo.util.CustomLogger;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,7 +19,6 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -29,33 +28,36 @@ class ProductControllerTest {
     private ProductService productService;
 
     @Mock
-    private CustomLogger logger; 
+    private CustomLogger logger;
+
+    @Mock
+    private JwtTokenProvider jwtTokenProvider;
 
     @InjectMocks
     private ProductController productController;
 
-    private ProductModel testProduct;
+    private final UUID testUserId = UUID.randomUUID();
     private final UUID testProductId = UUID.randomUUID();
     private final Long testStorageId = 1L;
+    private final String authToken = "Bearer token";
+
+    private ProductModel testProduct;
 
     @BeforeEach
     void setUp() {
         testProduct = new ProductModel();
-        testProduct.setProductId(testProductId);
-        testProduct.setQuantity(10L);
-        testProduct.setPrice(100.0);
-        testProduct.setIsActive(true);
+        testProduct.setId(testProductId);
     }
 
     @SuppressWarnings("null")
     @Test
     void createProduct_Success() throws NotFoundException {
         // Arrange
-        when(productService.createProduct(any(ProductModel.class), anyLong()))
-                .thenReturn(testProductId);
+        when(jwtTokenProvider.retrieveIdFromToken(anyString())).thenReturn(testUserId);
+        when(productService.createProduct(any(ProductModel.class), anyLong(), any(UUID.class))).thenReturn(testProductId);
 
         // Act
-        ResponseEntity<?> response = productController.createProduct(testProduct, testStorageId);
+        ResponseEntity<?> response = productController.createProduct(testProduct, testStorageId, authToken);
 
         // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -63,11 +65,13 @@ class ProductControllerTest {
         assertTrue(response.getBody() instanceof Map);
         
         @SuppressWarnings("unchecked")
-        Map<String, String> body = (Map<String, String>) response.getBody();
-        assertEquals(testProductId.toString(), body.get("productId"));
-        assertEquals("Product created successfully", body.get("message"));
-        
-        verify(productService, times(1)).createProduct(testProduct, testStorageId);
+        Map<String, String> responseBody = (Map<String, String>) response.getBody();
+        assertEquals(testProductId.toString(), responseBody.get("productId"));
+        assertEquals("Product created successfully", responseBody.get("message"));
+
+        verify(logger, times(1)).logInfo("Attempting to create product in storage: " + testStorageId);
+        verify(logger, times(1)).logInfo("Product created successfully with ID: " + testProductId);
+        verify(productService, times(1)).createProduct(testProduct, testStorageId, testUserId);
     }
 
     @Test
@@ -81,6 +85,9 @@ class ProductControllerTest {
         // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(testProduct, response.getBody());
+
+        verify(logger, times(1)).logDebug("Fetching product with ID: " + testProductId);
+        verify(logger, times(1)).logDebug("Product retrieved: " + testProduct);
         verify(productService, times(1)).getProductById(testProductId);
     }
 
@@ -88,10 +95,10 @@ class ProductControllerTest {
     @Test
     void updateProduct_Success() throws NotFoundException {
         // Arrange
-        doNothing().when(productService).updateProduct(any(ProductModel.class));
+        when(jwtTokenProvider.retrieveIdFromToken(anyString())).thenReturn(testUserId);
 
         // Act
-        ResponseEntity<?> response = productController.updateProduct(testProduct);
+        ResponseEntity<?> response = productController.updateProduct(testProduct, authToken);
 
         // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -99,20 +106,22 @@ class ProductControllerTest {
         assertTrue(response.getBody() instanceof Map);
         
         @SuppressWarnings("unchecked")
-        Map<String, String> body = (Map<String, String>) response.getBody();
-        assertEquals("Product updated successfully", body.get("message"));
-        
-        verify(productService, times(1)).updateProduct(testProduct);
+        Map<String, String> responseBody = (Map<String, String>) response.getBody();
+        assertEquals("Product updated successfully", responseBody.get("message"));
+
+        verify(logger, times(1)).logInfo("Updating product with ID: " + testProduct.getId());
+        verify(logger, times(1)).logInfo("Product updated successfully: " + testProduct.getId());
+        verify(productService, times(1)).updateProduct(testProduct, testUserId);
     }
 
     @SuppressWarnings("null")
     @Test
     void deactivateProduct_Success() throws NotFoundException {
         // Arrange
-        doNothing().when(productService).deactivateProduct(testProductId);
+        when(jwtTokenProvider.retrieveIdFromToken(anyString())).thenReturn(testUserId);
 
         // Act
-        ResponseEntity<?> response = productController.deactivateProduct(testProductId);
+        ResponseEntity<?> response = productController.deactivateProduct(testProductId, authToken);
 
         // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -120,20 +129,22 @@ class ProductControllerTest {
         assertTrue(response.getBody() instanceof Map);
         
         @SuppressWarnings("unchecked")
-        Map<String, String> body = (Map<String, String>) response.getBody();
-        assertEquals("Product deactivated successfully", body.get("message"));
-        
-        verify(productService, times(1)).deactivateProduct(testProductId);
+        Map<String, String> responseBody = (Map<String, String>) response.getBody();
+        assertEquals("Product deactivated successfully", responseBody.get("message"));
+
+        verify(logger, times(1)).logInfo("Deactivating product with ID: " + testProductId);
+        verify(logger, times(1)).logInfo("Product deactivated successfully: " + testProductId);
+        verify(productService, times(1)).deactivateProduct(testProductId, testUserId);
     }
 
     @SuppressWarnings("null")
     @Test
     void activateProduct_Success() throws NotFoundException {
         // Arrange
-        doNothing().when(productService).activateProduct(testProductId);
+        when(jwtTokenProvider.retrieveIdFromToken(anyString())).thenReturn(testUserId);
 
         // Act
-        ResponseEntity<?> response = productController.activateProduct(testProductId);
+        ResponseEntity<?> response = productController.activateProduct(testProductId, authToken);
 
         // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -141,47 +152,42 @@ class ProductControllerTest {
         assertTrue(response.getBody() instanceof Map);
         
         @SuppressWarnings("unchecked")
-        Map<String, String> body = (Map<String, String>) response.getBody();
-        assertEquals("Product activated successfully", body.get("message"));
-        
-        verify(productService, times(1)).activateProduct(testProductId);
+        Map<String, String> responseBody = (Map<String, String>) response.getBody();
+        assertEquals("Product activated successfully", responseBody.get("message"));
+
+        verify(logger, times(1)).logInfo("Activating product with ID: " + testProductId);
+        verify(logger, times(1)).logInfo("Product activated successfully: " + testProductId);
+        verify(productService, times(1)).activateProduct(testProductId, testUserId);
     }
 
     @Test
     void deleteProduct_Success() throws NotFoundException {
         // Arrange
-        when(productService.deleteProduct(testProductId, testStorageId)).thenReturn(true);
+        when(jwtTokenProvider.retrieveIdFromToken(anyString())).thenReturn(testUserId);
 
         // Act
-        ResponseEntity<?> response = productController.deleteProduct(testProductId, testStorageId);
+        ResponseEntity<?> response = productController.deleteProduct(testProductId, testStorageId, authToken);
 
         // Assert
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
         assertNull(response.getBody());
-        verify(productService, times(1)).deleteProduct(testProductId, testStorageId);
+
+        verify(logger, times(1)).logInfo("Deleting product with ID: " + testProductId + " from storage: " + testStorageId);
+        verify(logger, times(1)).logInfo("Product deleted successfully: " + testProductId);
+        verify(productService, times(1)).deleteProduct(testProductId, testStorageId, testUserId);
     }
 
     @Test
-    void createProduct_NotFoundException() throws NotFoundException {
+    void getProductById_NotFound() throws NotFoundException {
         // Arrange
-        when(productService.createProduct(any(ProductModel.class), anyLong()))
-                .thenThrow(new NotFoundException("Storage not found"));
-
-        // Act & Assert
-        assertThrows(NotFoundException.class, () -> {
-            productController.createProduct(testProduct, testStorageId);
-        });
-    }
-
-    @Test
-    void getProductById_NotFoundException() throws NotFoundException {
-        // Arrange
-        when(productService.getProductById(testProductId))
-                .thenThrow(new NotFoundException("Product not found"));
+        when(productService.getProductById(testProductId)).thenThrow(new NotFoundException("Product not found"));
 
         // Act & Assert
         assertThrows(NotFoundException.class, () -> {
             productController.getProductById(testProductId);
         });
+
+        verify(logger, times(1)).logDebug("Fetching product with ID: " + testProductId);
+        verify(productService, times(1)).getProductById(testProductId);
     }
 }

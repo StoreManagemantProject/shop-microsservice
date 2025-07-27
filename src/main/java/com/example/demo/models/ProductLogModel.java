@@ -28,7 +28,7 @@ public class ProductLogModel {
 
     private String message;
     private UUID productId;
-    private LogPermissionEnum permission;
+    private LogPermissionEnum logPermission;
     private Date timestamp;
     private String details; 
     private UUID logOwnerId; 

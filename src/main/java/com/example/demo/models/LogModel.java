@@ -28,7 +28,7 @@ public class LogModel {
     private Long id;
 
     private String message;
-    private LogPermissionEnum permission;
+    private LogPermissionEnum logPermission;
     private Date timestamp;
     private UUID storeId; 
     private String details; 

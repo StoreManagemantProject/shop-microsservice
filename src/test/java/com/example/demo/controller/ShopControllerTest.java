@@ -1,10 +1,10 @@
 package com.example.demo.controller;
 
+import com.example.demo.config.JwtTokenProvider;
 import com.example.demo.exception.NotFoundException;
 import com.example.demo.models.ShopModel;
 import com.example.demo.service.ShopService;
 import com.example.demo.util.CustomLogger;
-
 import org.apache.coyote.BadRequestException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,14 +28,19 @@ class ShopControllerTest {
     private ShopService shopService;
 
     @Mock
-    private CustomLogger logger; 
-    
+    private CustomLogger logger;
+
+    @Mock
+    private JwtTokenProvider jwtTokenProvider;
+
     @InjectMocks
     private ShopController shopController;
 
-    private ShopModel testShop;
+    private final UUID testUserId = UUID.randomUUID();
     private final UUID testShopId = UUID.randomUUID();
-    private final UUID testRequisitionOwner = UUID.randomUUID();
+    private final String authToken = "Bearer token";
+
+    private ShopModel testShop;
 
     @BeforeEach
     void setUp() {
@@ -49,27 +54,46 @@ class ShopControllerTest {
     @Test
     void createShop_Success() throws BadRequestException {
         // Arrange
-        when(shopService.createShop(any(ShopModel.class))).thenReturn(testShopId);
+        when(jwtTokenProvider.retrieveIdFromToken(anyString())).thenReturn(testUserId);
+        when(shopService.createShop(any(ShopModel.class), any(UUID.class))).thenReturn(testShopId);
 
         // Act
-        ResponseEntity<?> response = shopController.createShop(testShop);
+        ResponseEntity<?> response = shopController.createShop(testShop, authToken);
 
         // Assert
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertNotNull(response.getBody());
         
         @SuppressWarnings("unchecked")
-        Map<String, String> body = (Map<String, String>) response.getBody();
-        assertEquals("Shop created successfully", body.get("message"));
-        assertEquals(testShopId.toString(), body.get("id"));
-        
-        verify(shopService, times(1)).createShop(testShop);
+        Map<String, String> responseBody = (Map<String, String>) response.getBody();
+        assertEquals("Shop created successfully", responseBody.get("message"));
+        assertEquals(testShopId.toString(), responseBody.get("id"));
+
+        verify(logger).logInfo("Attempting to create new shop: " + testShop.getName());
+        verify(logger).logInfo("Shop created successfully with ID: " + testShopId);
+        verify(shopService).createShop(testShop, testUserId);
+    }
+
+    @Test
+    void createShop_BadRequest() throws BadRequestException {
+        // Arrange
+        when(jwtTokenProvider.retrieveIdFromToken(anyString())).thenReturn(testUserId);
+        when(shopService.createShop(any(ShopModel.class), any(UUID.class)))
+            .thenThrow(new BadRequestException("Invalid shop data"));
+
+        // Act & Assert
+        assertThrows(BadRequestException.class, () -> {
+            shopController.createShop(testShop, authToken);
+        });
+
+        verify(logger).logInfo("Attempting to create new shop: " + testShop.getName());
+        verify(logger).logError(eq("Failed to create shop: " + testShop.getName()), any(BadRequestException.class));
     }
 
     @Test
     void listShops_Success() {
         // Arrange
-        List<ShopModel> shops = Arrays.asList(testShop);
+        List<ShopModel> shops = Arrays.asList(testShop, new ShopModel());
         when(shopService.getAllShops()).thenReturn(shops);
 
         // Act
@@ -78,11 +102,30 @@ class ShopControllerTest {
         // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(shops, response.getBody());
+
+        verify(logger).logDebug("Fetching list of all shops");
+        verify(logger).logDebug("Successfully retrieved " + shops.size() + " shops");
+    }
+
+    @Test
+    void listShops_Empty() {
+        // Arrange
+        when(shopService.getAllShops()).thenReturn(Collections.emptyList());
+
+        // Act
+        ResponseEntity<?> response = shopController.listShops();
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertTrue(((Collection<?>) Objects.requireNonNull(response.getBody())).isEmpty());
+
+        verify(logger).logDebug("Fetching list of all shops");
+        verify(logger).logDebug("Successfully retrieved 0 shops");
     }
 
     @SuppressWarnings("null")
     @Test
-    void listShops_Exception() {
+    void listShops_Error() {
         // Arrange
         when(shopService.getAllShops()).thenThrow(new RuntimeException("Database error"));
 
@@ -93,69 +136,108 @@ class ShopControllerTest {
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         
         @SuppressWarnings("unchecked")
-        Map<String, String> body = (Map<String, String>) response.getBody();
-        assertEquals("Failed to retrieve shops", body.get("error"));
+        Map<String, String> responseBody = (Map<String, String>) response.getBody();
+        assertEquals("Failed to retrieve shops", responseBody.get("error"));
+
+        verify(logger).logDebug("Fetching list of all shops");
+        verify(logger).logError(eq("Failed to retrieve shops list"), any(RuntimeException.class));
     }
 
     @SuppressWarnings("null")
     @Test
     void deactivateShop_Success() throws BadRequestException, IllegalAccessException {
         // Arrange
-        when(shopService.deactivateShop(testShopId, testRequisitionOwner)).thenReturn(true);
+        when(jwtTokenProvider.retrieveIdFromToken(anyString())).thenReturn(testUserId);
+        when(shopService.deactivateShop(testShopId, testUserId)).thenReturn(true);
 
         // Act
-        ResponseEntity<?> response = shopController.deactivateShop(testRequisitionOwner, testShopId);
+        ResponseEntity<?> response = shopController.deactivateShop(testShopId, authToken);
 
         // Assert
         assertEquals(HttpStatus.ACCEPTED, response.getStatusCode());
         
         @SuppressWarnings("unchecked")
-        Map<String, String> body = (Map<String, String>) response.getBody();
-        assertEquals("Shop deactivated successfully", body.get("message"));
-        
-        verify(shopService, times(1)).deactivateShop(testShopId, testRequisitionOwner);
-    }
+        Map<String, String> responseBody = (Map<String, String>) response.getBody();
+        assertEquals("Shop deactivated successfully", responseBody.get("message"));
 
-    @Test
-    void deactivateShop_NullParameters() {
-        // Act & Assert
-        assertThrows(BadRequestException.class, () -> {
-            shopController.deactivateShop(null, null);
-        });
+        verify(logger).logInfo(String.format(
+            "Attempting to deactivate shop (ID: %s) by requisition owner: %s", 
+            testShopId, testUserId));
+        verify(logger).logInfo("Shop deactivated successfully: " + testShopId);
     }
 
     @Test
     void deactivateShop_Failure() throws BadRequestException, IllegalAccessException {
         // Arrange
-        when(shopService.deactivateShop(testShopId, testRequisitionOwner)).thenReturn(false);
+        when(jwtTokenProvider.retrieveIdFromToken(anyString())).thenReturn(testUserId);
+        when(shopService.deactivateShop(testShopId, testUserId)).thenReturn(false);
 
         // Act & Assert
         assertThrows(BadRequestException.class, () -> {
-            shopController.deactivateShop(testRequisitionOwner, testShopId);
+            shopController.deactivateShop(testShopId, authToken);
         });
+
+        verify(logger).logInfo(String.format(
+            "Attempting to deactivate shop (ID: %s) by requisition owner: %s", 
+            testShopId, testUserId));
+        verify(logger).logError(eq("Failed to deactivate shop: " + testShopId), any(BadRequestException.class));
+    }
+
+    @Test
+    void deactivateShop_NullParameters() {
+        // Arrange
+        when(jwtTokenProvider.retrieveIdFromToken(anyString())).thenReturn(null);
+
+        // Act & Assert
+        assertThrows(BadRequestException.class, () -> {
+            shopController.deactivateShop(testShopId, authToken);
+        });
+
+        verify(logger).logError(anyString(), any(BadRequestException.class));
     }
 
     @SuppressWarnings("null")
     @Test
     void activateShop_Success() throws BadRequestException, IllegalAccessException {
         // Arrange
-        when(shopService.activateShop(testShopId, testRequisitionOwner)).thenReturn(true);
+        when(jwtTokenProvider.retrieveIdFromToken(anyString())).thenReturn(testUserId);
+        when(shopService.activateShop(testShopId, testUserId)).thenReturn(true);
 
         // Act
-        ResponseEntity<?> response = shopController.activateShop(testRequisitionOwner, testShopId);
+        ResponseEntity<?> response = shopController.activateShop(authToken, testShopId);
 
         // Assert
         assertEquals(HttpStatus.ACCEPTED, response.getStatusCode());
         
         @SuppressWarnings("unchecked")
-        Map<String, String> body = (Map<String, String>) response.getBody();
-        assertEquals("Shop activated successfully", body.get("message"));
-        
-        verify(shopService, times(1)).activateShop(testShopId, testRequisitionOwner);
+        Map<String, String> responseBody = (Map<String, String>) response.getBody();
+        assertEquals("Shop activated successfully", responseBody.get("message"));
+
+        verify(logger).logInfo(String.format(
+            "Attempting to activate shop (ID: %s) by requisition owner: %s", 
+            testShopId, testUserId));
+        verify(logger).logInfo("Shop activated successfully: " + testShopId);
     }
 
     @Test
-    void getShopById_Success() throws NotFoundException {
+    void activateShop_Failure() throws BadRequestException, IllegalAccessException {
+        // Arrange
+        when(jwtTokenProvider.retrieveIdFromToken(anyString())).thenReturn(testUserId);
+        when(shopService.activateShop(testShopId, testUserId)).thenReturn(false);
+
+        // Act & Assert
+        assertThrows(BadRequestException.class, () -> {
+            shopController.activateShop(authToken, testShopId);
+        });
+
+        verify(logger).logInfo(String.format(
+            "Attempting to activate shop (ID: %s) by requisition owner: %s", 
+            testShopId, testUserId));
+        verify(logger).logError(eq("Failed to activate shop: " + testShopId), any(BadRequestException.class));
+    }
+
+    @Test
+    void getShopById_Success()  throws NotFoundException{
         // Arrange
         when(shopService.getShopById(testShopId)).thenReturn(testShop);
 
@@ -165,22 +247,44 @@ class ShopControllerTest {
         // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(testShop, response.getBody());
+
+        verify(logger).logDebug("Fetching shop by ID: " + testShopId);
+        verify(logger).logDebug("Successfully retrieved shop: " + testShopId);
     }
 
     @SuppressWarnings("null")
     @Test
-    void getShopById_Exception() throws NotFoundException {
+    void getShopById_Error()  throws NotFoundException{
         // Arrange
-        when(shopService.getShopById(testShopId)).thenThrow(new NotFoundException("Shop not found"));
+        when(shopService.getShopById(testShopId)).thenThrow(new RuntimeException("Database error"));
 
         // Act
         ResponseEntity<?> response = shopController.getShopById(testShopId);
 
         // Assert
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-
+        
         @SuppressWarnings("unchecked")
-        Map<String, String> body = (Map<String, String>) response.getBody();
-        assertEquals("Failed to retrieve shop", body.get("error"));
+        Map<String, String> responseBody = (Map<String, String>) response.getBody();
+        assertEquals("Failed to retrieve shop", responseBody.get("error"));
+
+        verify(logger).logDebug("Fetching shop by ID: " + testShopId);
+        verify(logger).logError(eq("Failed to retrieve shop: " + testShopId), any(RuntimeException.class));
+    }
+
+    @Test
+    void getShopById_NotFound() throws NotFoundException{
+        // Arrange
+        when(shopService.getShopById(testShopId)).thenReturn(null);
+
+        // Act
+        ResponseEntity<?> response = shopController.getShopById(testShopId);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNull(response.getBody());
+
+        verify(logger).logDebug("Fetching shop by ID: " + testShopId);
+        verify(logger).logDebug("Successfully retrieved shop: " + testShopId);
     }
 }

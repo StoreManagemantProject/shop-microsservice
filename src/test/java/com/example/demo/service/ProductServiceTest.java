@@ -28,6 +28,9 @@ class ProductServiceTest {
     @Mock
     private StorageRepository storageRepository;
 
+    @Mock
+    private LogService logService;
+    
     @InjectMocks
     private ProductService productService;
 
@@ -35,6 +38,7 @@ class ProductServiceTest {
     private StorageModel testStorage;
     private final UUID testProductId = UUID.randomUUID();
     private final Long testStorageId = 1L;
+    private final UUID testRequestOwner = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
@@ -57,7 +61,7 @@ class ProductServiceTest {
         when(storageRepository.save(any(StorageModel.class))).thenReturn(testStorage);
 
         // Act
-        UUID result = productService.createProduct(testProduct, testStorageId);
+        UUID result = productService.createProduct(testProduct, testStorageId, testRequestOwner);
 
         // Assert
         assertNotNull(result);
@@ -73,7 +77,7 @@ class ProductServiceTest {
 
         // Act & Assert
         assertThrows(NotFoundException.class, () -> {
-            productService.createProduct(testProduct, testStorageId);
+            productService.createProduct(testProduct, testStorageId, testRequestOwner);
         });
     }
 
@@ -84,7 +88,7 @@ class ProductServiceTest {
 
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> {
-            productService.createProduct(testProduct, testStorageId);
+            productService.createProduct(testProduct, testStorageId, testRequestOwner);
         });
     }
 
@@ -95,7 +99,7 @@ class ProductServiceTest {
 
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> {
-            productService.createProduct(testProduct, testStorageId);
+            productService.createProduct(testProduct, testStorageId, testRequestOwner);
         });
     }
 
@@ -135,7 +139,7 @@ class ProductServiceTest {
         when(productRepository.save(any(ProductModel.class))).thenReturn(testProduct);
 
         // Act
-        productService.updateProduct(updatedProduct);
+        productService.updateProduct(updatedProduct,testRequestOwner);
 
         // Assert
         assertEquals(20L, testProduct.getQuantity());
@@ -150,7 +154,7 @@ class ProductServiceTest {
 
         // Act & Assert
         assertThrows(NotFoundException.class, () -> {
-            productService.updateProduct(testProduct);
+            productService.updateProduct(testProduct, testRequestOwner);
         });
     }
 
@@ -162,7 +166,7 @@ class ProductServiceTest {
         when(productRepository.save(any(ProductModel.class))).thenReturn(testProduct);
 
         // Act
-        productService.deactivateProduct(testProductId);
+        productService.deactivateProduct(testProductId, testRequestOwner);
 
         // Assert
         assertFalse(testProduct.getIsActive());
@@ -177,7 +181,7 @@ class ProductServiceTest {
 
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> {
-            productService.deactivateProduct(testProductId);
+            productService.deactivateProduct(testProductId, testRequestOwner);
         });
     }
 
@@ -189,7 +193,7 @@ class ProductServiceTest {
         when(productRepository.save(any(ProductModel.class))).thenReturn(testProduct);
 
         // Act
-        productService.activateProduct(testProductId);
+        productService.activateProduct(testProductId, testRequestOwner);
 
         // Assert
         assertTrue(testProduct.getIsActive());
@@ -204,7 +208,7 @@ class ProductServiceTest {
 
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> {
-            productService.activateProduct(testProductId);
+            productService.activateProduct(testProductId, testRequestOwner);
         });
     }
 
@@ -217,7 +221,7 @@ class ProductServiceTest {
         when(storageRepository.save(any(StorageModel.class))).thenReturn(testStorage);
 
         // Act
-        boolean result = productService.deleteProduct(testProductId, testStorageId);
+        boolean result = productService.deleteProduct(testProductId, testStorageId, testRequestOwner);
 
         // Assert
         assertTrue(result);
@@ -232,7 +236,7 @@ class ProductServiceTest {
 
         // Act & Assert
         assertThrows(NotFoundException.class, () -> {
-            productService.deleteProduct(testProductId, testStorageId);
+            productService.deleteProduct(testProductId, testStorageId, testRequestOwner);
         });
     }
 
@@ -244,7 +248,7 @@ class ProductServiceTest {
 
         // Act & Assert
         assertThrows(NotFoundException.class, () -> {
-            productService.deleteProduct(testProductId, testStorageId);
+            productService.deleteProduct(testProductId, testStorageId, testRequestOwner);
         });
     }
 }
